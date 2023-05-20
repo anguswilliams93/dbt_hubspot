@@ -40,7 +40,8 @@ vars:
     engagement_email: "{{ ref('stg_hubspot__engagement_email') }}"
     engagement_meeting: "{{ ref('stg_hubspot__engagement_meeting') }}"
     engagement_note: "{{ ref('stg_hubspot__engagement_note') }}"
-    engagement_task: "{{ ref('stg_hubspot__engagement_task') }}"
+#   engagement_task: "{{ ref('stg_hubspot__engagement_task') }}"
+    hubspot_engagement_task_enabled: false
     hubspot_contact_merge_audit_enabled: false
 models:
   hubspot:
