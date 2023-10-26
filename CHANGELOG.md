@@ -1,3 +1,110 @@
+# dbt_hubspot v0.13.0
+## 🚨 Breaking Changes 🚨
+- This release will be a breaking change due to the removal of below dependencies.
+## Dependency Updates
+- Removes the dependencies on [dbt-expectations](https://github.com/calogica/dbt-expectations/releases) and [dbt-date](https://github.com/calogica/dbt-date/releases). ([PR #118](https://github.com/fivetran/dbt_hubspot/pull/118))
+
+## Under the Hood
+- Specifically we removed the `dbt_expectations.expect_column_values_to_be_unique` test that was used to validate uniqueness under given conditions for the primary keys among the end models. We will be working to replace this with a similar test. ([PR #118](https://github.com/fivetran/dbt_hubspot/pull/118))
+
+# dbt_hubspot v0.12.0
+
+## 🚨 Breaking Changes 🚨
+- This release includes breaking changes as a result of upstream changes within the `v0.12.0` release of the dbt_hubspot_source package. Please see below for the relevant breaking change release notes from the source package. ([PR #120](https://github.com/fivetran/dbt_hubspot/pull/120))
+- The following models in the dbt_hubspot_source package now use a custom macro to remove the property_hs_ prefix in staging columns, while also preventing duplicates. If de-prefixed columns match existing ones (e.g., `property_hs_meeting_outcome` vs. `meeting_outcome`), the macro favors the `property_hs_`field, aligning with the latest HubSpot API update. ([PR #115](https://github.com/fivetran/dbt_hubspot_source/pull/115))
+  - `stg_hubspot__engagement_call`
+  - `stg_hubspot__engagement_company`
+  - `stg_hubspot__engagement_contact`
+  - `stg_hubspot__engagement_deal`
+  - `stg_hubspot__engagement_email`
+  - `stg_hubspot__engagement_meeting`
+  - `stg_hubspot__engagement_note`
+  - `stg_hubspot__engagement_task`
+  - `stg_hubspot__ticket`
+  - `stg_hubspot__ticket_company`
+  - `stg_hubspot__ticket_contact`
+  - `stg_hubspot__ticket_deal`
+  - `stg_hubspot__ticket_engagement`
+  - `stg_hubspot__ticket_property_history`
+
+# dbt_hubspot v0.11.0
+[PR #114](https://github.com/fivetran/dbt_hubspot/pull/114) includes the following updates:
+## 🚨 Breaking Changes 🚨
+This change is made breaking in part to updates applied to the upstream [dbt_hubspot_source](https://github.com/fivetran/dbt_hubspot_source/pull/112) package following upgrades to ensure compatibility with the HubSpot v3 API updates. Please see below for the relevant upstream changes:
+
+- Following the [May 2023 connector update](https://fivetran.com/docs/applications/hubspot/changelog#may2023) the HubSpot connector now syncs the below parent and child tables from the new v3 API. As a result the dependent fields and field names from the downstream staging models have changed depending on the fields available in your HubSpot data. Now the respective staging models will sync the required fields for the dbt_hubspot downstream transformations and **all** of your `property_hs_*` fields. Please be aware that the `property_hs_*` will be truncated from the field name in the staging and downstream models. The impacted sources (and relevant staging models) are below:
+```txt
+  - `ENGAGEMENT`
+    - `ENGAGEMENT_CALL`
+    - `ENGAGEMENT_COMPANY`
+    - `ENGAGEMENT_CONTACT`
+    - `ENGAGEMENT_DEAL`
+    - `ENGAGEMENT_EMAIL`
+    - `ENGAGEMENT_MEETING`
+    - `ENGAGEMENT_NOTE`
+    - `ENGAGEMENT_TASK`
+  - `TICKET`
+    - `TICKET_COMPANY`
+    - `TICKET_CONTACT`
+    - `TICKET_DEAL`
+    - `TICKET_ENGAGEMENT`
+    - `TICKET_PROPERTY_HISTORY`
+```
+  - Please note that while these changes are breaking, the package has been updated to ensure backwards compatibility with the pre HubSpot v3 API updates. As a result, you may see some `null` fields which are artifacts of the pre v3 API HubSpot version. Be sure to inspect the relevant field descriptions for an understanding of which fields remain for backwards compatibility purposes. These fields will be removed once all HubSpot connectors are upgraded to the v3 API.
+
+- The `engagements_joined` macro has been adjusted to account for the HubSpot v3 API changes. In particular, the fields that used to only be available in the `engagements` source are now available in the individual `engagement_[type]` sources. As such, coalesce statements were added to ensure the correct populated fields are used following the join. Further, to avoid ambiguous columns a `dbt-utils.star` was added to remove the explicitly declared columns within the coalesce statements.
+  - The coalesce is only included for backwards compatibility. This will be removed in a future release when all HubSpot connectors are on the latest API version.
+
+## Under the Hood
+- The `base_model` argument used for the `engagements_joined` macro has been updated to be an explicit `ref` as opposed to the previously used `var` within the below models:
+  - `hubspot__engagement_calls`
+  - `hubspot__engagement_emails`
+  - `hubspot__engagement_meetings`
+  - `hubspot__engagement_notes`
+  - `hubspot__engagement_tasks`
+    - This update was applied as the `var` result was producing inconsistent results during compile and runtime when leveraging the `dbt-utils.star` macro. However, the explicit `ref` always provided consistent results. 
+
+## Documentation Updates
+- As new fields were added in the v3 API updates, and old fields were removed, the documentation was updated to reflect the v3 API consistent fields. Please take note if you are still using the pre v3 API, you will find the following end models no longer have complete field documentation coverage:
+  - `hubspot__engagement_calls`
+  - `hubspot__engagement_emails`
+  - `hubspot__engagement_meetings`
+  - `hubspot__engagement_notes`
+  - `hubspot__engagement_tasks`
+# dbt_hubspot v0.10.1
+
+## 🪲 Bug Fixes
+Explicitly casts join fields (`engagement_id` and `deal_id`) in `hubspot__deals` as the appropriate data types to avoid potential errors in joining. [PR #113](https://github.com/fivetran/dbt_hubspot/pull/113)
+
+# dbt_hubspot v0.10.0
+## 🚨 Breaking Changes 🚨
+These changes are made breaking due to changes in the source. 
+- Columns `updated_at` and `created_at` were added to the following sources and their corresponding staging models in the [source package](https://github.com/fivetran/dbt_hubspot_source):
+  - `DEAL_PIPELINE`
+  - `DEAL_PIPELINE_STAGE`
+  - `TICKET_PIPELINE`
+  - `TICKET_PIPELINE_STAGE`
+- As a result, the following columns have been added ([#111](https://github.com/fivetran/dbt_hubspot/pull/111)): 
+  - Model `hubspot__deals`:
+    - `deal_pipeline_created_at`
+    - `deal_pipeline_updated_at`
+  - Model `hubspot__deal_stages`:
+    - `deal_pipeline_stage_created_at`
+    - `deal_pipeline_stage_updated_at`
+- Documentation has also been updated with these new columns. ([#111](https://github.com/fivetran/dbt_hubspot/pull/111))
+
+## 🎉 Feature Updates
+- Updated README to include the variables `hubspot_ticket_deal_enabled` and `hubspot_owner_enabled`. ([#111](https://github.com/fivetran/dbt_hubspot/pull/111))
+
+## 🚘 Under the Hood
+- Modified the `unnest` logic in the `merge_contacts` macro for **Redshift** users to reduce runtime of the `int_hubspot__contact_merge_adjust` model. ([#110](https://github.com/fivetran/dbt_hubspot/pull/110))
+- Updated seed data for testing newly added columns. ([#111](https://github.com/fivetran/dbt_hubspot/pull/111))
+
+## Contributors
+- @kcraig-ats ([#110](https://github.com/fivetran/dbt_hubspot/pull/110))
+
+See upstream `hubspot_source` release notes [here](https://github.com/fivetran/dbt_hubspot_source/blob/main/CHANGELOG.md).
+
 # dbt_hubspot v0.9.1
 
 ## 🎉 Feature Updates
